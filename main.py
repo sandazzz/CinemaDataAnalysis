@@ -1,3 +1,5 @@
+import pandas as pd
+import matplotlib.pyplot as plt
 from utils.filter_columns import filter_csv_columns
 from utils.graph.plot_top_regions import plot_top_regions
 
@@ -13,6 +15,41 @@ def group_and_sort_by_region(data, column):
     #Retourne une série triée par ordre décroissant.
     
     return data.groupby("commune")[column].mean().sort_values(ascending=False)
+
+# Fonction pour filtrer les données pour l'année 2022
+def filter_data_for_2022(data):
+    return data[data['entrées 2022'].notnull()]
+
+# Fonction pour calculer et afficher la corrélation entre deux colonnes
+def calculate_and_display_correlation(data, column1, column2):
+    correlation = data[column1].corr(data[column2])
+    print(f"Corrélation entre {column1} et {column2} : {correlation:.2f}")
+    return correlation
+
+# Fonction pour créer un nuage de points avec régression linéaire
+def plot_scatter_with_regression(data, x_col, y_col, title):
+    plt.figure(figsize=(8, 6))
+    x = data[x_col]
+    y = data[y_col]
+
+    # Nuage de points
+    plt.scatter(x, y, label="Données", alpha=0.7)
+
+    # Calcul manuel de la régression linéaire
+    x_mean = x.mean()
+    y_mean = y.mean()
+    slope = ((x - x_mean) * (y - y_mean)).sum() / ((x - x_mean) ** 2).sum()
+    intercept = y_mean - slope * x_mean
+
+    # Tracer la ligne de régression
+    plt.plot(x, slope * x + intercept, color='red', label="Régression linéaire")
+
+    plt.title(title)
+    plt.xlabel(x_col)
+    plt.ylabel(y_col)
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
 def main():
     # Chemin vers le fichier
@@ -58,6 +95,25 @@ def main():
 
     # Visualiser les données des 10 premières régions
     plot_top_regions(region_stats, average_entries_per_seat)
+
+    # Filtrer pour garder uniquement l'année 2022
+    data_2022 = filter_data_for_2022(filtered_data)
+
+    # Calculer et afficher les corrélations
+    print("Calcul des corrélations :")
+    corr_screens = calculate_and_display_correlation(data_2022, "écrans", "entrées 2022")
+    corr_seats = calculate_and_display_correlation(data_2022, "fauteuils", "entrées 2022")
+
+    # Créer les visualisations
+    print("Création des visualisations :")
+    plot_scatter_with_regression(data_2022, "écrans", "entrées 2022", "Relation entre le nombre d'écrans et les entrées 2022")
+    plot_scatter_with_regression(data_2022, "fauteuils", "entrées 2022", "Relation entre le nombre de fauteuils et les entrées 2022")
+
+    # Conclusion basée sur les corrélations
+    if abs(corr_screens) > abs(corr_seats):
+        print("La variable 'écrans' a un impact plus important sur les entrées annuelles.")
+    else:
+        print("La variable 'fauteuils' a un impact plus important sur les entrées annuelles.")
 
 if __name__ == "__main__":
     main()
